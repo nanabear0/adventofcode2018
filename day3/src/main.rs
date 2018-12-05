@@ -1,5 +1,8 @@
 extern crate regex;
+#[macro_use]
+extern crate itertools;
 
+use itertools::Itertools;
 use regex::Regex;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -16,7 +19,7 @@ struct Square {
     size_x: usize,
     size_y: usize,
 }
-
+#[allow(dead_code)]
 fn day32() {
     let br = BufReader::new(File::open("input.txt").unwrap());
     let re = Regex::new(r"#(\d+) @ (\d+),(\d+): (\d+)x(\d+)").unwrap();
@@ -30,11 +33,11 @@ fn day32() {
             let offset_y = cap[3].parse::<usize>().unwrap();
             let size_x = cap[4].parse::<usize>().unwrap();
             let size_y = cap[5].parse::<usize>().unwrap();
-            for x in offset_x..(offset_x + size_x) {
-                for y in offset_y..(offset_y + size_y) {
+            iproduct!(offset_x..(offset_x + size_x), offset_y..(offset_y + size_y)).for_each(
+                |(x, y)| {
                     map.entry((x, y)).or_insert(Vec::new()).push(id);
                 }
-            }
+            );
         }
     });
     let mut set: HashSet<usize> = HashSet::new();
@@ -46,10 +49,11 @@ fn day32() {
                 set.insert(*z);
             });
         });
-    let bestOne = (1..lines).find(|x| !set.contains(x)).unwrap();
-    println!("{}", bestOne);
+    let best_one = (1..lines).find(|x| !set.contains(x)).unwrap();
+    println!("{}", best_one);
 }
 
+#[allow(dead_code)]
 fn day31() {
     let br = BufReader::new(File::open("input.txt").unwrap());
     let re = Regex::new(r"#(\d)+ @ (\d+),(\d+): (\d+)x(\d+)").unwrap();
@@ -60,11 +64,11 @@ fn day31() {
             let offset_y = cap[3].parse::<usize>().unwrap();
             let size_x = cap[4].parse::<usize>().unwrap();
             let size_y = cap[5].parse::<usize>().unwrap();
-            for x in offset_x..(offset_x + size_x) {
-                for y in offset_y..(offset_y + size_y) {
+            iproduct!(offset_x..(offset_x + size_x), offset_y..(offset_y + size_y)).for_each(
+                |(x, y)| {
                     map.entry((x, y)).and_modify(|x| *x += 1).or_insert(1);
                 }
-            }
+            );
         }
     });
     let count: usize = map.iter().filter(|(_, x)| **x >= 1).count();
