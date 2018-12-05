@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::io::BufReader;
 
 fn day22() {
-    let br = BufReader::new(File::open("input2.txt").unwrap());
+    let br = BufReader::new(File::open("input.txt").unwrap());
     let v: Vec<String> = br.lines().map(|x| x.unwrap()).collect();
     v.iter().enumerate().for_each(|(e, x)| {
         v.iter()
@@ -25,7 +25,7 @@ fn day22() {
     });
 }
 fn day21() {
-    let br = BufReader::new(File::open("input2.txt").unwrap());
+    let br = BufReader::new(File::open("input.txt").unwrap());
     let l: Vec<String> = br.lines().map(|x| x.unwrap()).collect();
     let mut twos: u32 = 0;
     let mut threes: u32 = 0;
