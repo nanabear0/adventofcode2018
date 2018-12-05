@@ -23,16 +23,16 @@ fn main() {
             match cap.get(4) {
                 Some(gid) => {
                     active_guard = gid.as_str().parse::<usize>().unwrap();
-                    println!("new guard {}", active_guard);
                 }
                 None => {
                     if cap[3].contains("falls asleep") {
                         sleep_time = cap[2].parse::<usize>().unwrap();
                     } else {
                         let wake_time = cap[2].parse::<usize>().unwrap();
+                        let day = &cap[1];
                         println!(
-                            "Guard {} slept from {} to {}",
-                            active_guard, sleep_time, wake_time
+                            "During {} guard {} slept from {} to {}",
+                            day, active_guard, sleep_time, wake_time
                         );
                         //TODO work with guard sleep times
                     }
