@@ -160,9 +160,40 @@ fn day61() {
     println!("{} {}", e, size);
 }
 
+fn day62() {
+    let br = BufReader::new(File::open("input.txt").unwrap());
+    let re = Regex::new(r"(\d+), (\d+)").unwrap();
+    let size_x: i32 = 500;
+    let size_y: i32 = 500;
+    let points: Vec<Point> = br
+        .lines()
+        .enumerate()
+        .map(|(e, k)| (e, k.unwrap()))
+        .map(|(e, s)| {
+            let cap = re.captures_iter(&s).next().unwrap();
+            Point {
+                id: e as i32,
+                x: cap[1].parse().unwrap(),
+                y: cap[2].parse().unwrap(),
+            }
+        })
+        .collect();
+
+    let count = iproduct!(0..size_x, 0..size_y)
+        .filter(|(x, y)| {
+            points
+                .iter()
+                .map(|p| (x - p.x).abs() + (y - p.y).abs())
+                .sum::<i32>()
+                < 10000
+        })
+        .count();
+    println!("{}", count);
+}
+
 fn main() {
     let now = Instant::now();
-    day61();
+    day62();
     let d: Duration = now.elapsed();
     println!("> {}.{:03} seconds", d.as_secs(), d.subsec_millis());
 }
