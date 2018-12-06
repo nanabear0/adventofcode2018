@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::time::{Duration, Instant};
 
 fn day22() {
     let br = BufReader::new(File::open("input.txt").unwrap());
@@ -53,5 +54,8 @@ fn day21() {
     println!("{}", twos * threes);
 }
 fn main() {
-    day22();
+    let now = Instant::now();
+    day21();
+    let d: Duration = now.elapsed();
+    println!("{}{:03} milliseconds", d.as_secs(), d.subsec_millis());
 }

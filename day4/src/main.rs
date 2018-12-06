@@ -96,10 +96,6 @@ fn main() {
         }
     }
     day42(guard_day_hour_map);
-    let d:Duration = now.elapsed();
-    println!(
-        "{}{:03} milliseconds",
-        d.as_secs(),
-        d.subsec_millis()
-    );
+    let d: Duration = now.elapsed();
+    println!("{}{:03} milliseconds", d.as_secs(), d.subsec_millis());
 }

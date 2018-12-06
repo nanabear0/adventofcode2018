@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::time::{Duration, Instant};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -36,7 +37,7 @@ fn day32() {
             iproduct!(offset_x..(offset_x + size_x), offset_y..(offset_y + size_y)).for_each(
                 |(x, y)| {
                     map.entry((x, y)).or_insert(Vec::new()).push(id);
-                }
+                },
             );
         }
     });
@@ -67,7 +68,7 @@ fn day31() {
             iproduct!(offset_x..(offset_x + size_x), offset_y..(offset_y + size_y)).for_each(
                 |(x, y)| {
                     map.entry((x, y)).and_modify(|x| *x += 1).or_insert(1);
-                }
+                },
             );
         }
     });
@@ -76,5 +77,8 @@ fn day31() {
 }
 
 fn main() {
+    let now = Instant::now();
     day32();
+    let d: Duration = now.elapsed();
+    println!("{}{:03} milliseconds", d.as_secs(), d.subsec_millis());
 }
