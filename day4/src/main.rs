@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::time::{Duration, Instant};
 
 fn day42(guard_day_hour_map: HashMap<usize, HashMap<String, Vec<bool>>>) {
     let (cid, ctime, cdur) = guard_day_hour_map
@@ -62,6 +63,7 @@ fn day41(guard_day_hour_map: HashMap<usize, HashMap<String, Vec<bool>>>) {
 }
 
 fn main() {
+    let now = Instant::now();
     let br = BufReader::new(File::open("input.txt").unwrap());
     let times: Vec<String> = br.lines().map(|x| x.unwrap()).sorted();
     let re = Regex::new(
@@ -94,4 +96,10 @@ fn main() {
         }
     }
     day42(guard_day_hour_map);
+    let d:Duration = now.elapsed();
+    println!(
+        "{}{:03} milliseconds",
+        d.as_secs(),
+        d.subsec_millis()
+    );
 }
