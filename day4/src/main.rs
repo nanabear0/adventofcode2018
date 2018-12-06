@@ -7,38 +7,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-fn day42() {
-    let br = BufReader::new(File::open("input.txt").unwrap());
-    let times: Vec<String> = br.lines().map(|x| x.unwrap()).sorted();
-    let re = Regex::new(
-        r"\[\d{4}-(\d{2}-\d{2}) \d{2}:(\d{2})\] (falls asleep|wakes up|Guard #(\d+) begins shift)",
-    )
-    .unwrap();
-    let mut active_guard: usize = 0;
-    let mut sleep_time: usize = 0;
-    let mut guard_day_hour_map: HashMap<usize, HashMap<String, Vec<bool>>> = HashMap::new();
-    for t in times {
-        let cap = re.captures_iter(&t).next().unwrap();
-        match cap.get(4) {
-            Some(gid) => {
-                active_guard = gid.as_str().parse::<usize>().unwrap();
-            }
-            None => {
-                if cap[3].contains("falls asleep") {
-                    sleep_time = cap[2].parse::<usize>().unwrap();
-                } else {
-                    let wake_time = cap[2].parse::<usize>().unwrap();
-                    (sleep_time..wake_time).for_each(|x| {
-                        guard_day_hour_map
-                            .entry(active_guard)
-                            .or_insert(HashMap::new())
-                            .entry(String::new() + &cap[1])
-                            .or_insert(vec![false; 60])[x] = true;
-                    });
-                }
-            }
-        }
-    }
+fn day42(guard_day_hour_map: HashMap<usize, HashMap<String, Vec<bool>>>) {
     let (cid, ctime, cdur) = guard_day_hour_map
         .iter()
         .map(|(id, x)| {
@@ -64,38 +33,7 @@ fn day42() {
         .unwrap();
     println!("{} {} {}", cid, ctime, ctime * cid);
 }
-fn day41() {
-    let br = BufReader::new(File::open("input.txt").unwrap());
-    let times: Vec<String> = br.lines().map(|x| x.unwrap()).sorted();
-    let re = Regex::new(
-        r"\[\d{4}-(\d{2}-\d{2}) \d{2}:(\d{2})\] (falls asleep|wakes up|Guard #(\d+) begins shift)",
-    )
-    .unwrap();
-    let mut active_guard: usize = 0;
-    let mut sleep_time: usize = 0;
-    let mut guard_day_hour_map: HashMap<usize, HashMap<String, Vec<bool>>> = HashMap::new();
-    for t in times {
-        let cap = re.captures_iter(&t).next().unwrap();
-        match cap.get(4) {
-            Some(gid) => {
-                active_guard = gid.as_str().parse::<usize>().unwrap();
-            }
-            None => {
-                if cap[3].contains("falls asleep") {
-                    sleep_time = cap[2].parse::<usize>().unwrap();
-                } else {
-                    let wake_time = cap[2].parse::<usize>().unwrap();
-                    (sleep_time..wake_time).for_each(|x| {
-                        guard_day_hour_map
-                            .entry(active_guard)
-                            .or_insert(HashMap::new())
-                            .entry(String::new() + &cap[1])
-                            .or_insert(vec![false; 60])[x] = true;
-                    });
-                }
-            }
-        }
-    }
+fn day41(guard_day_hour_map: HashMap<usize, HashMap<String, Vec<bool>>>) {
     let (id, _) = guard_day_hour_map
         .iter()
         .map(|(id, x)| {
@@ -124,5 +62,36 @@ fn day41() {
 }
 
 fn main() {
-    day42();
+    let br = BufReader::new(File::open("input.txt").unwrap());
+    let times: Vec<String> = br.lines().map(|x| x.unwrap()).sorted();
+    let re = Regex::new(
+        r"\[\d{4}-(\d{2}-\d{2}) \d{2}:(\d{2})\] (falls asleep|wakes up|Guard #(\d+) begins shift)",
+    )
+    .unwrap();
+    let mut active_guard: usize = 0;
+    let mut sleep_time: usize = 0;
+    let mut guard_day_hour_map: HashMap<usize, HashMap<String, Vec<bool>>> = HashMap::new();
+    for t in times {
+        let cap = re.captures_iter(&t).next().unwrap();
+        match cap.get(4) {
+            Some(gid) => {
+                active_guard = gid.as_str().parse::<usize>().unwrap();
+            }
+            None => {
+                if cap[3].contains("falls asleep") {
+                    sleep_time = cap[2].parse::<usize>().unwrap();
+                } else {
+                    let wake_time = cap[2].parse::<usize>().unwrap();
+                    (sleep_time..wake_time).for_each(|x| {
+                        guard_day_hour_map
+                            .entry(active_guard)
+                            .or_insert(HashMap::new())
+                            .entry(String::new() + &cap[1])
+                            .or_insert(vec![false; 60])[x] = true;
+                    });
+                }
+            }
+        }
+    }
+    day42(guard_day_hour_map);
 }
