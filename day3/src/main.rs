@@ -57,7 +57,7 @@ fn day32() {
 #[allow(dead_code)]
 fn day31() {
     let br = BufReader::new(File::open("input.txt").unwrap());
-    let re = Regex::new(r"#(\d)+ @ (\d+),(\d+): (\d+)x(\d+)").unwrap();
+    let re = Regex::new(r"#(\d+) @ (\d+),(\d+): (\d+)x(\d+)").unwrap();
     let mut map: HashMap<(usize, usize), usize> = HashMap::new();
     br.lines().map(|x| x.unwrap()).for_each(|s| {
         for cap in re.captures_iter(&s) {
@@ -67,7 +67,7 @@ fn day31() {
             let size_y = cap[5].parse::<usize>().unwrap();
             iproduct!(offset_x..(offset_x + size_x), offset_y..(offset_y + size_y)).for_each(
                 |(x, y)| {
-                    map.entry((x, y)).and_modify(|x| *x += 1).or_insert(1);
+                    *map.entry((x, y)).or_insert(1)+=1;
                 },
             );
         }
@@ -78,7 +78,7 @@ fn day31() {
 
 fn main() {
     let now = Instant::now();
-    day32();
+    day31();
     let d: Duration = now.elapsed();
     println!("{}{:03} milliseconds", d.as_secs(), d.subsec_millis());
 }
