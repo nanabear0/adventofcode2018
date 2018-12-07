@@ -13,15 +13,13 @@ use std::time::{Duration, Instant};
 fn day71(deps: &mut BTreeMap<char, Rc<RefCell<BTreeSet<char>>>>) {
     let mut result: Vec<char> = Vec::new();
     while deps.len() > 0 {
-        let mut c: char = '&';
-        for cx in deps
+        let c: char = *deps
             .iter()
             .filter(|(_, v)| v.borrow().len() == 0)
             .map(|(k, _)| k)
-        {
-            c = *cx;
-            break;
-        }
+            .take(1)
+            .next()
+            .unwrap();
         if c == '&' {
             break;
         }
@@ -51,19 +49,19 @@ fn main() {
         })
         .for_each(|(x, y)| {
             deps.entry(y)
-                .or_insert(Rc::new(RefCell::new(BTreeSet::new())))
+                .or_insert_with(|| Rc::new(RefCell::new(BTreeSet::new())))
                 .borrow_mut()
                 .insert(x);
         });
     //Not so elegant fix
     deps.entry('C')
-        .or_insert(Rc::new(RefCell::new(BTreeSet::new())));
+        .or_insert_with(|| Rc::new(RefCell::new(BTreeSet::new())));
     deps.entry('I')
-        .or_insert(Rc::new(RefCell::new(BTreeSet::new())));
+        .or_insert_with(|| Rc::new(RefCell::new(BTreeSet::new())));
     deps.entry('Y')
-        .or_insert(Rc::new(RefCell::new(BTreeSet::new())));
+        .or_insert_with(|| Rc::new(RefCell::new(BTreeSet::new())));
     deps.entry('N')
-        .or_insert(Rc::new(RefCell::new(BTreeSet::new())));
+        .or_insert_with(|| Rc::new(RefCell::new(BTreeSet::new())));
     day71(&mut deps);
     let d: Duration = now.elapsed();
     println!("> {}.{:03} seconds", d.as_secs(), d.subsec_millis());
