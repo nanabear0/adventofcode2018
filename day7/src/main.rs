@@ -20,9 +20,6 @@ fn day71(deps: &mut BTreeMap<char, Rc<RefCell<BTreeSet<char>>>>) {
             .take(1)
             .next()
             .unwrap();
-        if c == '&' {
-            break;
-        }
         result.push(c);
         deps.remove(&c);
         for n in deps.values() {
