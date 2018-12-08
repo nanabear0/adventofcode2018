@@ -7,3 +7,5 @@ edition = "2018"
 [dependencies]
 regex = "1"
 itertools = "0.7"
+gif="*"
+rand="*"
