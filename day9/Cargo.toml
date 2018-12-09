@@ -1,11 +1,8 @@
 [package]
-name = "day6"
+name = "day9"
 version = "0.1.0"
 authors = ["pipicanim <denizhanerdem@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-regex = "1"
 itertools = "0.7"
-gif="*"
-rand="*"
