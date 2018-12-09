@@ -23,7 +23,7 @@ impl<T> Cycle for VecDeque<T> {
 }
 
 fn day91(players: usize, last_marble: usize) {
-    let mut marbles: VecDeque<usize> = VecDeque::new();
+    let mut marbles: VecDeque<usize> = VecDeque::with_capacity(7152200);
     marbles.push_back(0);
     let mut cur_player = 0 as usize;
     let mut score_card: HashMap<usize, usize> = HashMap::new();
