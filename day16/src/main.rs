@@ -11,270 +11,210 @@ fn main() {
     let br = BufReader::new(File::open("input.txt").unwrap());
 
     let re = Regex::new(r"^Before:\s*\[(.+)\]$|^([\d\s]+)$|^After:\s*\[(.+)\]$|^\s*$").unwrap();
-    let mut before: Vec<usize> = Vec::new();
-    let mut input: Vec<usize> = Vec::new();
-    let mut after: Vec<usize>;
-    let mut empty_spaces = 0;
+    let mut before: [usize; 4] = [0, 0, 0, 0];
+    let mut input: [usize; 4] = [0, 0, 0, 0];
+    let mut after: [usize; 4] = [0, 0, 0, 0];
+    let mut empty_lines = 0;
     let mut phase = 1;
-    let mut probs: HashMap<usize, HashSet<String>> = HashMap::new();
-    let mut final_mapping: BTreeMap<usize, String> = BTreeMap::new();
-    let mut phase2: Vec<usize> = vec![0, 0, 0, 0];
-    let mut phase1: usize = 0;
+    let mut probabilities: HashMap<usize, HashSet<usize>> = HashMap::new();
+    let mut final_mapping: BTreeMap<usize, usize> = BTreeMap::new();
+
+    let mut phase2_answer: [usize; 4] = [0, 0, 0, 0];
+    let mut phase1_answer: usize = 0;
     for l in br.lines() {
         for cap in re.captures_iter(&l.unwrap()) {
             if let Some(b) = cap.get(1) {
-                empty_spaces = 0;
-                before = b
-                    .as_str()
-                    .split(", ")
-                    .map(|x| x.parse::<usize>().unwrap())
-                    .collect();
+                empty_lines = 0;
+                before.copy_from_slice(
+                    &b.as_str()
+                        .split(", ")
+                        .map(|x| x.parse::<usize>().unwrap())
+                        .collect::<Vec<usize>>()[..4],
+                );
                 continue;
             }
 
             if let Some(b) = cap.get(2) {
-                input = b
-                    .as_str()
-                    .split(' ')
-                    .map(|x| x.parse::<usize>().unwrap())
-                    .collect();
+                input.copy_from_slice(
+                    &b.as_str()
+                        .split(' ')
+                        .map(|x| x.parse::<usize>().unwrap())
+                        .collect::<Vec<usize>>()[..4],
+                );
                 if phase == 1 {
-                    empty_spaces = 0;
+                    empty_lines = 0;
                     continue;
                 } else if phase == 2 {
-                    phase2 = process_phase_2(&phase2, &input, &final_mapping);
+                    phase2_answer = OPS_LIST[final_mapping[&input[0]]](
+                        &phase2_answer,
+                        input[1],
+                        input[2],
+                        input[3],
+                    )
                 }
             }
 
             if let Some(b) = cap.get(3) {
-                empty_spaces = 0;
-                after = b
-                    .as_str()
-                    .split(", ")
-                    .map(|x| x.parse::<usize>().unwrap())
-                    .collect();
+                empty_lines = 0;
+                after.copy_from_slice(
+                    &b.as_str()
+                        .split(", ")
+                        .map(|x| x.parse::<usize>().unwrap())
+                        .collect::<Vec<usize>>()[..4],
+                );
                 let res = collect_probs(&before, &input, &after);
                 if res.len() >= 3 {
-                    phase1 += 1;
+                    phase1_answer += 1;
                 }
-                let mut set = probs.entry(input[0]).or_insert_with(|| res.clone()).clone();
+                let mut set = probabilities
+                    .entry(input[0])
+                    .or_insert_with(|| res.clone())
+                    .clone();
                 set = set.intersection(&res).cloned().collect();
-                probs.remove(&input[0]);
-                probs.insert(input[0], set);
+                probabilities.remove(&input[0]);
+                probabilities.insert(input[0], set);
                 continue;
             }
 
-            empty_spaces += 1;
-            if empty_spaces == 3 {
-                for _ in 0..16 {
-                    let mut c_to_remove: Vec<String> = Vec::new();
-                    for (k, c) in probs.iter().filter(|(_, v)| v.len() == 1) {
-                        let v = c.iter().next().unwrap();
-                        final_mapping.insert(*k, v.clone());
-                        c_to_remove.push(v.clone());
-                    }
-                    for c in c_to_remove {
-                        for v in probs.values_mut() {
-                            v.remove(&c);
-                        }
-                    }
-                }
+            empty_lines += 1;
+            if empty_lines == 3 {
+                final_mapping = figure_out_mapping(&mut probabilities);
                 phase = 2;
             }
         }
     }
-    println!("part1: {}", phase1);
-    println!("part2: {}", phase2[0]);
+    println!("part1: {}", phase1_answer);
+    println!("part2: {}", phase2_answer[0]);
 
     let d: Duration = now.elapsed();
     println!("> {}.{:03} seconds", d.as_secs(), d.subsec_millis());
 }
 
-fn process_phase_2(
-    phase2: &[usize],
-    input: &[usize],
-    final_mapping: &BTreeMap<usize, String>,
-) -> Vec<usize> {
-    if final_mapping[&input[0]] == "addr" {
-        addr(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "addi" {
-        addi(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "mulr" {
-        mulr(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "muli" {
-        muli(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "banr" {
-        banr(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "bani" {
-        bani(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "borr" {
-        borr(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "bori" {
-        bori(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "setr" {
-        setr(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "seti" {
-        seti(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "gtir" {
-        gtir(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "gtri" {
-        gtri(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "gtrr" {
-        gtrr(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "eqir" {
-        eqir(&phase2, input[1], input[2], input[3])
-    } else if final_mapping[&input[0]] == "eqri" {
-        eqri(&phase2, input[1], input[2], input[3])
-    } else {
-        eqrr(&phase2, input[1], input[2], input[3])
+fn figure_out_mapping(probs: &mut HashMap<usize, HashSet<usize>>) -> BTreeMap<usize, usize> {
+    let mut final_mapping: BTreeMap<usize, usize> = BTreeMap::new();
+    for _ in 0..16 {
+        let mut c_to_remove: Vec<usize> = Vec::new();
+        for (k, c) in probs.iter().filter(|(_, v)| v.len() == 1) {
+            let v = c.iter().next().unwrap();
+            final_mapping.insert(*k, v.clone());
+            c_to_remove.push(*v);
+        }
+        for c in c_to_remove {
+            for v in probs.values_mut() {
+                v.remove(&c);
+            }
+        }
     }
+    final_mapping
 }
 
-fn collect_probs(before: &[usize], input: &[usize], after: &[usize]) -> HashSet<String> {
-    let mut probs: HashSet<String> = HashSet::new();
-    if addr(&before, input[1], input[2], input[3]) == after {
-        probs.insert("addr".to_string());
+type OPS = fn(&[usize; 4], usize, usize, usize) -> [usize; 4];
+const OPS_LIST: [OPS; 16] = [
+    addr, addi, mulr, muli, banr, bani, borr, bori, setr, seti, gtir, gtri, gtrr, eqir, eqri, eqrr,
+];
+
+fn collect_probs(before: &[usize; 4], input: &[usize; 4], after: &[usize; 4]) -> HashSet<usize> {
+    let mut case_probabilities: HashSet<usize> = HashSet::new();
+    for (e, op) in OPS_LIST.iter().enumerate() {
+        if op(&before, input[1], input[2], input[3]) == *after {
+            case_probabilities.insert(e);
+        }
     }
-    if addi(&before, input[1], input[2], input[3]) == after {
-        probs.insert("addi".to_string());
-    }
-    if mulr(&before, input[1], input[2], input[3]) == after {
-        probs.insert("mulr".to_string());
-    }
-    if muli(&before, input[1], input[2], input[3]) == after {
-        probs.insert("muli".to_string());
-    }
-    if banr(&before, input[1], input[2], input[3]) == after {
-        probs.insert("banr".to_string());
-    }
-    if bani(&before, input[1], input[2], input[3]) == after {
-        probs.insert("bani".to_string());
-    }
-    if borr(&before, input[1], input[2], input[3]) == after {
-        probs.insert("borr".to_string());
-    }
-    if bori(&before, input[1], input[2], input[3]) == after {
-        probs.insert("bori".to_string());
-    }
-    if setr(&before, input[1], input[2], input[3]) == after {
-        probs.insert("setr".to_string());
-    }
-    if seti(&before, input[1], input[2], input[3]) == after {
-        probs.insert("seti".to_string());
-    }
-    if gtir(&before, input[1], input[2], input[3]) == after {
-        probs.insert("gtir".to_string());
-    }
-    if gtri(&before, input[1], input[2], input[3]) == after {
-        probs.insert("gtri".to_string());
-    }
-    if gtrr(&before, input[1], input[2], input[3]) == after {
-        probs.insert("gtrr".to_string());
-    }
-    if eqir(&before, input[1], input[2], input[3]) == after {
-        probs.insert("eqir".to_string());
-    }
-    if eqri(&before, input[1], input[2], input[3]) == after {
-        probs.insert("eqri".to_string());
-    }
-    if eqrr(&before, input[1], input[2], input[3]) == after {
-        probs.insert("eqrr".to_string());
-    }
-    probs
+    case_probabilities
 }
 
-fn addr(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] + new_vec[b];
-    new_vec
+fn addr(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] + result[b];
+    result
 }
 
-fn addi(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] + b;
-    new_vec
+fn addi(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] + b;
+    result
 }
 
-fn mulr(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] * new_vec[b];
-    new_vec
+fn mulr(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] * result[b];
+    result
 }
 
-fn muli(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] * b;
-    new_vec
+fn muli(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] * b;
+    result
 }
 
-fn banr(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] & new_vec[b];
-    new_vec
+fn banr(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] & result[b];
+    result
 }
 
-fn bani(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] & b;
-    new_vec
+fn bani(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] & b;
+    result
 }
 
-fn borr(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] | new_vec[b];
-    new_vec
+fn borr(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] | result[b];
+    result
 }
 
-fn bori(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a] | b;
-    new_vec
+fn bori(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a] | b;
+    result
 }
 
-fn setr(vec: &[usize], a: usize, _b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = new_vec[a];
-    new_vec
+fn setr(vec: &[usize; 4], a: usize, _b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = result[a];
+    result
 }
 
-fn seti(vec: &[usize], a: usize, _b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = a;
-    new_vec
+fn seti(vec: &[usize; 4], a: usize, _b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = a;
+    result
 }
 
-fn gtir(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = (a > new_vec[b]) as usize;
-    new_vec
+fn gtir(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = (a > result[b]) as usize;
+    result
 }
 
-fn gtri(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = (new_vec[a] > b) as usize;
-    new_vec
+fn gtri(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = (result[a] > b) as usize;
+    result
 }
 
-fn gtrr(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = (new_vec[a] > new_vec[b]) as usize;
-    new_vec
+fn gtrr(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = (result[a] > result[b]) as usize;
+    result
 }
 
-fn eqir(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = (a == new_vec[b]) as usize;
-    new_vec
+fn eqir(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = (a == result[b]) as usize;
+    result
 }
 
-fn eqri(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = (new_vec[a] == b) as usize;
-    new_vec
+fn eqri(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = (result[a] == b) as usize;
+    result
 }
 
-fn eqrr(vec: &[usize], a: usize, b: usize, c: usize) -> Vec<usize> {
-    let mut new_vec = vec.to_owned();
-    new_vec[c] = (new_vec[a] == new_vec[b]) as usize;
-    new_vec
+fn eqrr(vec: &[usize; 4], a: usize, b: usize, c: usize) -> [usize; 4] {
+    let mut result = vec.to_owned();
+    result[c] = (result[a] == result[b]) as usize;
+    result
 }
