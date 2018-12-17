@@ -2,6 +2,7 @@ extern crate image;
 extern crate regex;
 use image::{ImageBuffer, Rgb};
 use regex::Regex;
+use std::cmp::{max, min};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -78,20 +79,20 @@ fn main() {
         let r2 = caps[5].parse::<usize>().unwrap();
 
         if id == "x" {
-            max_x = std::cmp::max(max_x, pos);
-            min_x = std::cmp::min(min_x, pos);
+            max_x = max(max_x, pos);
+            min_x = min(min_x, pos);
             for y in r1..=r2 {
-                max_y = std::cmp::max(max_y, y);
-                min_y = std::cmp::min(min_y, y);
+                max_y = max(max_y, y);
+                min_y = min(min_y, y);
                 well[y * 2000 + pos] = '#';
             }
         } else {
-            min_y = std::cmp::min(min_y, pos);
-            max_y = std::cmp::max(max_y, pos);
+            max_y = max(max_y, pos);
+            min_y = min(min_y, pos);
             for x in r1..=r2 {
                 well[pos * 2000 + x] = '#';
-                max_x = std::cmp::max(max_x, x);
-                min_x = std::cmp::min(min_x, x);
+                max_x = max(max_x, x);
+                min_x = min(min_x, x);
             }
         }
     }
