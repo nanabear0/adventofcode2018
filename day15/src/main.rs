@@ -1,7 +1,12 @@
+use gif::{Encoder, Frame, Repeat, SetParameter};
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::time::{Duration, Instant};
+
+const MAKE_GIF: bool = false;
+const GIF_SCALE: usize = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Cell {
@@ -29,11 +34,37 @@ struct Distance {
 }
 
 fn simulation(is_part2: bool, elf_ap: i32) -> char {
+    let mut color_map = Vec::new();
+    let mut states: Vec<Vec<u8>> = Vec::new();
+    if MAKE_GIF {
+        // 0 wall
+        color_map.push(0x00);
+        color_map.push(0x00);
+        color_map.push(0x00);
+        // 1 ground
+        color_map.push(0xFF);
+        color_map.push(0xFF);
+        color_map.push(0xFF);
+        //elves are from 2-102
+
+        // goblins are from 103-203
+    }
+    for i in (55u8..=255u8).step_by(2) {
+        color_map.push(0);
+        color_map.push(i);
+        color_map.push(0);
+    }
+    for i in (55u8..=255u8).step_by(2) {
+        color_map.push(i);
+        color_map.push(0);
+        color_map.push(0);
+    }
+
     let br = BufReader::new(File::open("input.txt").unwrap());
     let mut map: Vec<Cell> = Vec::new();
     let mut y_size = 0;
     let mut last_id = 0;
-    let winner: char;
+    let mut winner: char = 'E';
     for (y, line) in br.lines().map(|x| x.unwrap()).enumerate() {
         for (x, cell) in line.chars().enumerate() {
             if cell == '#' {
@@ -66,6 +97,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
     }
     let mut round_count = 1;
     'round: loop {
+        let mut update = false;
         let mut units: Vec<Unit> = map
             .iter()
             .filter_map(|x| match x {
@@ -112,7 +144,9 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                     })
                     .collect::<Vec<Unit>>();
                 if enemies.is_empty() {
-                    winner = unit.elf_or_goblin;
+                    if winner != 'G' {
+                        winner = unit.elf_or_goblin;
+                    }
                     if which_unit != 0 {
                         round_count -= 1;
                     }
@@ -196,7 +230,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                             Cell::Empty => {
                                 map[(d.y + 1) * y_size + d.x] = Cell::Distance(Distance {
                                     y: d.y + 1,
-                                    x: d.x ,
+                                    x: d.x,
                                     distance: cur_dist + 1,
                                 });
                                 break_iter = false;
@@ -210,7 +244,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                             Cell::Empty => {
                                 map[(d.y - 1) * y_size + d.x] = Cell::Distance(Distance {
                                     y: d.y - 1,
-                                    x: d.x ,
+                                    x: d.x,
                                     distance: cur_dist + 1,
                                 });
                                 break_iter = false;
@@ -223,7 +257,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                         match map[d.y * y_size + (d.x + 1)] {
                             Cell::Empty => {
                                 map[d.y * y_size + (d.x + 1)] = Cell::Distance(Distance {
-                                    y: d.y ,
+                                    y: d.y,
                                     x: d.x + 1,
                                     distance: cur_dist + 1,
                                 });
@@ -237,7 +271,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                         match map[d.y * y_size + (d.x - 1)] {
                             Cell::Empty => {
                                 map[d.y * y_size + (d.x - 1)] = Cell::Distance(Distance {
-                                    y: d.y ,
+                                    y: d.y,
                                     x: d.x - 1,
                                     distance: cur_dist + 1,
                                 });
@@ -268,7 +302,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                         'find_square: loop {
                             let mut new_paths: Vec<(usize, usize, usize)> = Vec::new();
                             for p in &possible_paths {
-                                match map[(p.0 + 1) * y_size + (p.1 )] {
+                                match map[(p.0 + 1) * y_size + (p.1)] {
                                     Cell::Distance(d) => {
                                         if d.distance == p.2 - 1 {
                                             new_paths.push((d.y, d.x, d.distance));
@@ -281,7 +315,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                                     }
                                     _ => {}
                                 }
-                                match map[(p.0 - 1) * y_size + (p.1 )] {
+                                match map[(p.0 - 1) * y_size + (p.1)] {
                                     Cell::Distance(d) => {
                                         if d.distance == p.2 - 1 {
                                             new_paths.push((d.y, d.x, d.distance));
@@ -294,7 +328,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                                     }
                                     _ => {}
                                 }
-                                match map[(p.0 ) * y_size + (p.1 + 1)] {
+                                match map[(p.0) * y_size + (p.1 + 1)] {
                                     Cell::Distance(d) => {
                                         if d.distance == p.2 - 1 {
                                             new_paths.push((d.y, d.x, d.distance));
@@ -307,7 +341,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                                     }
                                     _ => {}
                                 }
-                                match map[(p.0 ) * y_size + (p.1 - 1)] {
+                                match map[(p.0) * y_size + (p.1 - 1)] {
                                     Cell::Distance(d) => {
                                         if d.distance == p.2 - 1 {
                                             new_paths.push((d.y, d.x, d.distance));
@@ -333,6 +367,7 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                         unit.y = y;
                         unit.x = x;
                         map[y * y_size + x] = Cell::Unit(*unit);
+                        update = true;
                         rechose_target = true;
                     }
                     None => {
@@ -349,14 +384,58 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
                     attackee.hp -= unit.ap;
                     if attackee.hp <= 0 {
                         if attackee.elf_or_goblin == 'E' && is_part2 {
-                            return 'G';
+                            winner = 'G';
                         }
+                        update = true;
                         map[e.y * y_size + e.x] = Cell::Empty;
                     }
                 }
             }
+            if MAKE_GIF && update {
+                let mut state: Vec<u8> = vec![1; 32 * 32 * GIF_SCALE * GIF_SCALE];
+                for (y, row) in map.chunks(32).enumerate() {
+                    for (x, cell) in row.iter().enumerate() {
+                        match cell {
+                            Cell::Empty => {
+                                scaling_fill(&mut state, y, x, 1);
+                            }
+                            Cell::Wall => {
+                                scaling_fill(&mut state, y, x, 0);
+                            }
+                            Cell::Unit(i) => {
+                                if i.elf_or_goblin == 'G' {
+                                    scaling_fill(&mut state, y, x, (102 + i.hp / 2) as u8);
+                                } else if i.elf_or_goblin == 'E' {
+                                    scaling_fill(&mut state, y, x, (2 + i.hp / 2) as u8);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                states.push(state);
+            }
         }
         round_count += 1;
+    }
+    if MAKE_GIF {
+        let mut image = File::create(format!("batte-{}.gif", elf_ap)).unwrap();
+        let mut encoder = Encoder::new(
+            &mut image,
+            32u16 * GIF_SCALE as u16,
+            32u16 * GIF_SCALE as u16,
+            &color_map,
+        )
+        .unwrap();
+        encoder.set(Repeat::Finite(1)).unwrap();
+        for state in &states {
+            let mut frame = Frame::default();
+            frame.width = 32u16 * GIF_SCALE as u16;
+            frame.height = 32u16 * GIF_SCALE as u16;
+            frame.buffer = Cow::Borrowed(state as &[u8]);
+            frame.delay = 1;
+            encoder.write_frame(&frame).unwrap();
+        }
     }
 
     let winner_force = map
@@ -372,13 +451,16 @@ fn simulation(is_part2: bool, elf_ap: i32) -> char {
     winner
 }
 
+fn scaling_fill(state: &mut Vec<u8>, y: usize, x: usize, ci: u8) {
+    for sy in 0..GIF_SCALE {
+        for sx in 0..GIF_SCALE {
+            state[(y * GIF_SCALE + sy) * 32 * GIF_SCALE + (x * GIF_SCALE + sx)] = ci;
+        }
+    }
+}
+
 fn main() {
     let now = Instant::now();
-
-    //part1
-    // simulation(false, 3);
-
-    //part2
     for i in 3.. {
         if simulation(true, i) == 'E' {
             break;
