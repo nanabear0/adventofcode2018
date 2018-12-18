@@ -12,6 +12,8 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::time::{Duration, Instant};
 
+const VISUALIZATION: bool = false;
+
 #[derive(Debug, Clone, Copy)]
 struct Point {
     id: i32,
@@ -41,28 +43,32 @@ fn update_neighbours(
     size_x: &i32,
     size_y: &i32,
     distance: &i32,
-) {
+) -> bool {
+    let mut change = false;
     if *x != 0 {
-        update(&mut all[calc_dist(&(x - 1), &y, &size_x)], owner, distance);
+        change = update(&mut all[calc_dist(&(x - 1), &y, &size_x)], owner, distance) || change;
     }
     if *x != size_x - 1 {
-        update(&mut all[calc_dist(&(x + 1), &y, &size_x)], owner, distance);
+        change = update(&mut all[calc_dist(&(x + 1), &y, &size_x)], owner, distance) || change;
     }
     if *y != 0 {
-        update(&mut all[calc_dist(&x, &(y - 1), &size_x)], owner, distance);
+        change = update(&mut all[calc_dist(&x, &(y - 1), &size_x)], owner, distance) || change;
     }
     if *y != size_y - 1 {
-        update(&mut all[calc_dist(&x, &(y + 1), &size_x)], owner, distance);
+        change = update(&mut all[calc_dist(&x, &(y + 1), &size_x)], owner, distance) || change;
     }
+    change
 }
 
-fn update(c: &mut Cell, owner: &i32, distance: &i32) {
+fn update(c: &mut Cell, owner: &i32, distance: &i32) -> bool {
+    let mut change = false;
     match c {
         Cell::Owned(x) => {
             //noop
         }
         Cell::HasDist(x) => {
             if x.distance == *distance + 1 && *owner != x.owner {
+                change = true;
                 *c = Cell::HasMultipleDists;
             }
         }
@@ -70,12 +76,14 @@ fn update(c: &mut Cell, owner: &i32, distance: &i32) {
             //noop
         }
         Cell::Empty => {
+            change = true;
             *c = Cell::HasDist(CellDist {
                 owner: *owner,
                 distance: *distance + 1,
             })
         }
     }
+    change
 }
 
 fn calc_dist(x: &i32, y: &i32, size_x: &i32) -> usize {
@@ -90,14 +98,16 @@ fn day61() {
     let mut all: Vec<Cell> = vec![Cell::Empty; (size_x * size_y) as usize];
     //visualization objects
     let mut color_map = Vec::new();
-    color_map.push(0xFF);
-    color_map.push(0xFF);
-    color_map.push(0xFF);
-    color_map.push(0);
-    color_map.push(0);
-    color_map.push(0);
-    for _ in 0..50 * 3 {
-        color_map.push(rand::random::<u8>());
+    if VISUALIZATION {
+        color_map.push(0xFF);
+        color_map.push(0xFF);
+        color_map.push(0xFF);
+        color_map.push(0);
+        color_map.push(0);
+        color_map.push(0);
+        for _ in 0..50 * 3 {
+            color_map.push(rand::random::<u8>());
+        }
     }
     let mut states: Vec<Vec<u8>> = Vec::new();
     br.lines()
@@ -114,55 +124,69 @@ fn day61() {
         .for_each(|p: Point| all[(p.x * size_x + p.y) as usize] = Cell::Owned(p.id));
     let mut cur_dist: usize = 0;
     for _ in 1..size_x + size_y {
+        let mut change = false;
         for (x, y) in iproduct!(0..size_x, 0..size_y) {
             match all[calc_dist(&x, &y, &size_x)] {
                 Cell::Owned(c) => {
                     if cur_dist == 0 {
-                        update_neighbours(&mut all, &c, &x, &y, &size_x, &size_y, &0)
+                        change =
+                            update_neighbours(&mut all, &c, &x, &y, &size_x, &size_y, &0) || change;
                     }
                 }
                 Cell::HasDist(c) => {
                     if c.distance == cur_dist as i32 {
-                        update_neighbours(&mut all, &c.owner, &x, &y, &size_x, &size_y, &c.distance)
+                        change = update_neighbours(
+                            &mut all,
+                            &c.owner,
+                            &x,
+                            &y,
+                            &size_x,
+                            &size_y,
+                            &c.distance,
+                        ) || change;
                     }
                 }
                 _ => {}
             }
         }
 
-        //visualization
-        let mut state: Vec<u8> = vec![0; (size_x * size_y) as usize];
-        for (x, y) in iproduct!(0..size_x, 0..size_y) {
-            match all[calc_dist(&x, &y, &size_x)] {
-                Cell::Owned(id) => {
-                    state[calc_dist(&x, &y, &size_x)] = 1;
-                }
-                Cell::HasDist(d) => {
-                    state[calc_dist(&x, &y, &size_x)] = d.owner as u8 + 2;
-                }
-                Cell::HasMultipleDists => {
-                    state[calc_dist(&x, &y, &size_x)] = 0;
-                }
-                Cell::Empty => {
-                    state[calc_dist(&x, &y, &size_x)] = 0;
+        if VISUALIZATION && change {
+            let mut state: Vec<u8> = vec![0; (size_x * size_y) as usize];
+            for (x, y) in iproduct!(0..size_x, 0..size_y) {
+                match all[calc_dist(&x, &y, &size_x)] {
+                    Cell::Owned(id) => {
+                        state[calc_dist(&x, &y, &size_x)] = 1;
+                    }
+                    Cell::HasDist(d) => {
+                        state[calc_dist(&x, &y, &size_x)] = d.owner as u8 + 2;
+                    }
+                    Cell::HasMultipleDists => {
+                        state[calc_dist(&x, &y, &size_x)] = 0;
+                    }
+                    Cell::Empty => {
+                        state[calc_dist(&x, &y, &size_x)] = 0;
+                    }
                 }
             }
+            states.push(state);
         }
-        states.push(state);
         cur_dist += 1;
     }
     //Visualization
-    let mut image = File::create("voronoi.gif").unwrap();
-    let mut encoder = Encoder::new(&mut image, size_x as u16, size_y as u16, &color_map).unwrap();
-    encoder.set(Repeat::Infinite).unwrap();
-    for state in &states {
-        let mut frame = Frame::default();
-        frame.width = size_x as u16;
-        frame.height = size_y as u16;
-        frame.buffer = Cow::Borrowed(state as &[u8]);
-        encoder.write_frame(&frame).unwrap();
+    if VISUALIZATION {
+        let mut image = File::create("voronoi.gif").unwrap();
+        let mut encoder =
+            Encoder::new(&mut image, size_x as u16, size_y as u16, &color_map).unwrap();
+        encoder.set(Repeat::Infinite).unwrap();
+        for state in &states {
+            let mut frame = Frame::default();
+            frame.width = size_x as u16;
+            frame.height = size_y as u16;
+            frame.buffer = Cow::Borrowed(state as &[u8]);
+            encoder.write_frame(&frame).unwrap();
+        }
+        println!("File created");
     }
-    println!("File created");
 
     let mut set: HashSet<i32> = HashSet::new();
     for (x, y) in iproduct!(0..size_x, 0..size_y) {
