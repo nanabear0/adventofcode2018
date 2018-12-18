@@ -152,7 +152,7 @@ fn day61() {
         cur_dist += 1;
     }
     //Visualization
-    let mut image = File::create("target/voronoi.gif").unwrap();
+    let mut image = File::create("voronoi.gif").unwrap();
     let mut encoder = Encoder::new(&mut image, size_x as u16, size_y as u16, &color_map).unwrap();
     encoder.set(Repeat::Infinite).unwrap();
     for state in &states {
