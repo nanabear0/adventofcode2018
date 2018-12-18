@@ -6,6 +6,7 @@ use std::io::BufReader;
 use std::time::{Duration, Instant};
 
 const MAKE_GIF: bool = true;
+const GIF_SCALE: usize = 5;
 
 fn pos((y, x): (i32, i32)) -> usize {
     (y * 50 + x) as usize
@@ -115,19 +116,21 @@ fn main() {
             println!("{},{},{},{}", i, trees, ly, trees * ly);
         }
         if MAKE_GIF {
-            let mut state: Vec<u8> = Vec::new();
-            for cell in &orchard {
-                match *cell {
-                    '.' => {
-                        state.push(0);
+            let mut state: Vec<u8> = vec![0; 50 * 50 * GIF_SCALE * GIF_SCALE];
+            for (y, row) in orchard.chunks(50).enumerate() {
+                for (x, cell) in row.iter().enumerate() {
+                    match *cell {
+                        '.' => {
+                            scaling_fill(&mut state, y, x, 0);
+                        }
+                        '#' => {
+                            scaling_fill(&mut state, y, x, 2);
+                        }
+                        '|' => {
+                            scaling_fill(&mut state, y, x, 1);
+                        }
+                        _ => {}
                     }
-                    '#' => {
-                        state.push(2);
-                    }
-                    '|' => {
-                        state.push(1);
-                    }
-                    _ => {}
                 }
             }
             states.push(state);
@@ -137,16 +140,30 @@ fn main() {
     println!("> {}.{:03} seconds", d.as_secs(), d.subsec_millis());
     if MAKE_GIF {
         let mut image = File::create("orchard.gif").unwrap();
-        let mut encoder = Encoder::new(&mut image, 50 as u16, 50 as u16, &color_map).unwrap();
+        let mut encoder = Encoder::new(
+            &mut image,
+            (GIF_SCALE * 50) as u16,
+            (GIF_SCALE * 50) as u16,
+            &color_map,
+        )
+        .unwrap();
         encoder.set(Repeat::Infinite).unwrap();
         for state in &states {
             let mut frame = Frame::default();
-            frame.width = 50 as u16;
-            frame.height = 50 as u16;
+            frame.width = (GIF_SCALE * 50) as u16;
+            frame.height = (GIF_SCALE * 50) as u16;
             frame.buffer = Cow::Borrowed(state as &[u8]);
             encoder.write_frame(&frame).unwrap();
         }
         println!("File created");
+    }
+}
+
+fn scaling_fill(state: &mut Vec<u8>, y: usize, x: usize, ci: u8) {
+    for sy in 0..GIF_SCALE {
+        for sx in 0..GIF_SCALE {
+            state[(y * GIF_SCALE + sy) * 50 * GIF_SCALE + (x * GIF_SCALE + sx)] = ci;
+        }
     }
 }
 
