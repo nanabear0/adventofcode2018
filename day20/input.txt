@@ -1,1 +1,1 @@
-^ENWWW(NEEE|SSE(EE|N)(E|W))$
+^WNE$
