@@ -16,59 +16,49 @@ fn can_travel_to(
     (minx, miny, minz): (i32, i32, i32),
     (maxx, maxy, maxz): (i32, i32, i32),
     r: i32,
-) -> i32 {
-    let opx1;
-    let opx2;
-    let opy1;
-    let opy2;
-    let opz1;
-    let opz2;
+) -> bool {
+    let sx;
+    let sy;
+    let sz;
 
     if pz > maxz {
-        opz1 = pz;
-        opz2 = maxz;
+        sz = maxz;
     } else if pz < minz {
-        opz1 = pz;
-        opz2 = minz;
+        sz = minz;
     } else {
-        opz1 = 0;
-        opz2 = 0;
+        sz = pz;
     }
 
     if py > maxy {
-        opy1 = py;
-        opy2 = maxy;
+        sy = maxy;
     } else if py < miny {
-        opy1 = py;
-        opy2 = miny;
+        sy = miny;
     } else {
-        opy1 = 0;
-        opy2 = 0;
+        sy = py;
     }
 
     if px > maxx {
-        opx1 = px;
-        opx2 = maxx;
+        sx = maxx;
     } else if px < minx {
-        opx1 = px;
-        opx2 = minx;
+        sx = minx;
     } else {
-        opx1 = 0;
-        opx2 = 0;
+        sx = px;
     }
-    in_distance((opx1, opy1, opz1), (opx2, opy2, opz2), r) as i32
+
+    in_distance((px, py, pz), (sx, sy, sz), r)
 }
 
 fn count_points(
     (minx, miny, minz): (i32, i32, i32),
     (maxx, maxy, maxz): (i32, i32, i32),
     points: &[(i32, i32, i32, i32)],
-) -> i32 {
-    let mut count = 0;
-    for (px, py, pz, r) in points {
-        count += can_travel_to((*px, *py, *pz), (minx, miny, minz), (maxx, maxy, maxz), *r);
-    }
-    count
+) -> usize {
+    points
+        .iter()
+        .filter(|(px, py, pz, r)| {
+            can_travel_to((*px, *py, *pz), (minx, miny, minz), (maxx, maxy, maxz), *r)
+        })
+        .count()
 }
 
 fn search(
