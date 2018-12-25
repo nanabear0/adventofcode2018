@@ -55,9 +55,7 @@ fn count_points(
 ) -> usize {
     points
         .iter()
-        .filter(|(px, py, pz, r)| {
-            can_travel_to((*px, *py, *pz), minp, maxp, *r)
-        })
+        .filter(|(px, py, pz, r)| can_travel_to((*px, *py, *pz), minp, maxp, *r))
         .count()
 }
 
