@@ -49,14 +49,14 @@ fn can_travel_to(
 }
 
 fn count_points(
-    (minx, miny, minz): (i32, i32, i32),
-    (maxx, maxy, maxz): (i32, i32, i32),
+    minp: (i32, i32, i32),
+    maxp: (i32, i32, i32),
     points: &[(i32, i32, i32, i32)],
 ) -> usize {
     points
         .iter()
         .filter(|(px, py, pz, r)| {
-            can_travel_to((*px, *py, *pz), (minx, miny, minz), (maxx, maxy, maxz), *r)
+            can_travel_to((*px, *py, *pz), minp, maxp, *r)
         })
         .count()
 }
