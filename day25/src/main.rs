@@ -1,5 +1,5 @@
 #![allow(unused)]
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -12,7 +12,7 @@ fn distance(x: (i32, i32, i32, i32), y: (i32, i32, i32, i32)) -> i32 {
 fn main() {
     let now = Instant::now();
     let br = BufReader::new(File::open("input.txt").unwrap());
-    let mut stars_in_the_sky = BTreeSet::new();
+    let mut stars_in_the_sky = HashSet::new();
     for l in br.lines() {
         let temp = l
             .unwrap()
@@ -24,7 +24,7 @@ fn main() {
 
     let mut constellation_count = 0;
     while !stars_in_the_sky.is_empty() {
-        let mut this_constellation: BTreeSet<(i32, i32, i32, i32)> = BTreeSet::new();
+        let mut this_constellation: HashSet<(i32, i32, i32, i32)> = HashSet::new();
         let first_star = *stars_in_the_sky.iter().next().unwrap();
         this_constellation.insert(first_star);
         stars_in_the_sky.remove(&first_star);
